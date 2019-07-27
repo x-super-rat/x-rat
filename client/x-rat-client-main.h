@@ -1,0 +1,4 @@
+#ifndef X_RAT_CLIENT_MAIN_H
+#define X_RAT_CLIENT_MAIN_H
+
+#endif // X-RAT-CLIENT-MAIN_H

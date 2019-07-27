@@ -1,0 +1,4 @@
+#ifndef X_RAT_SERVER_MAIN_H
+#define X_RAT_SERVER_MAIN_H
+
+#endif // X_RAT_SERVER_MAIN_H
