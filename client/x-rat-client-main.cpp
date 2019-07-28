@@ -59,14 +59,22 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    int link_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    int link_fd = socket(AF_INET6, SOCK_DGRAM, 0);
     if (link_fd < 0) {
         perror("socket");
         exit(1);
     }
 
     int on = 1;
-    int rc = ioctl(link_fd, FIONBIO, reinterpret_cast<char *>(&on));
+    int off = 0;
+    int rc = setsockopt(link_fd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&off, sizeof(off));
+    if (rc < 0) {
+        perror("setsockopt");
+        close(link_fd);
+        exit(1);
+    }
+
+    rc = ioctl(link_fd, FIONBIO, reinterpret_cast<char *>(&on));
     if (rc < 0) {
         perror("ioctl() sock failed");
         close(link_fd);
@@ -80,26 +88,21 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
-    struct sockaddr_in remoteaddr = {};
+    struct sockaddr_in6 remoteaddr = {};
 
-    remoteaddr.sin_family = AF_INET;
-    remoteaddr.sin_addr.s_addr = inet_addr("8.8.8.8");
-    remoteaddr.sin_port = htons(6999);
+    remoteaddr.sin6_family = AF_INET6;
+    rc = inet_pton(AF_INET6, "::FFFF:169.254.0.2", &remoteaddr.sin6_addr);
+    if (rc != 1) {
+        perror("inet_pton");
+        exit(-1);
+    }
+    remoteaddr.sin6_port = htons(6999);
 
     rc = connect(link_fd, (struct sockaddr *)&remoteaddr, sizeof(remoteaddr));
     if (rc < 0) {
         perror("connect");
         exit(1);
     }
-
-    //    si_me.sin_port = 6999;
-    //    si_me.sin_family = AF_UNSPEC;
-    //    si_me.sin_addr.s_addr = htonl(INADDR_ANY);
-    //    int result = bind(sock, reinterpret_cast<sockaddr *>(&si_me), sizeof(sockaddr));
-    //    if (result < 0) {
-    //        perror("bind");
-    //        exit(1);
-    //    }
 
     const int nfds = 2;
     pollfd fds[nfds] = {
@@ -126,7 +129,12 @@ int main(int argc, char *argv[])
                 continue;
 
             if (fds[i].revents != POLLIN) {
-                printf("  Error! revents = %d\n", fds[i].revents);
+                printf("  Error! revents = %d on fd no. %d\n", fds[i].revents, i);
+
+                int error;
+                socklen_t errlen = sizeof(error);
+                getsockopt(fds[i].fd, SOL_SOCKET, SO_ERROR, &error, &errlen);
+                printf("error=%d, msg=%s\n", error, strerror(error));
                 end_server = true;
                 break;
             }
