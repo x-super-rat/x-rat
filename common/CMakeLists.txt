@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(x-rat_common)
 
 include_directories("include")
+include_directories(${MBEDTLS_INCLUDE_DIRS})
 
 set(XRAT_COMMON_VERSION_MAJOR ${XRAT_BASE_VERSION_MAJOR})
 set(XRAT_COMMON_VERSION_MINOR ${XRAT_BASE_VERSION_MINOR})
@@ -16,6 +17,7 @@ set(XRAT_COMMON_SRC
     src/x_rat_common.cpp
     )
 set(DEPENDS
+    ${MBEDTLS_LIBRARIES}
     )
 
 add_library(${PROJECT_NAME} STATIC ${XRAT_COMMON_HDR} ${XRAT_COMMON_SRC})

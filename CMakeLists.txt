@@ -14,6 +14,8 @@ set(XRAT_BASE_VERSION_MINOR 0)
 set(XRAT_BASE_VERSION_PATCH 5)
 set(XRAT_BASE_VERSION "${XRAT_BASE_VERSION_MAJOR}.${XRAT_BASE_VERSION_MINOR}.${XRAT_BASE_VERSION_PATCH}")
 
+find_package(MbedTLS REQUIRED)
+
 add_subdirectory(common)
 add_subdirectory(client)
 add_subdirectory(server)

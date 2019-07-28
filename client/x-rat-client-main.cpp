@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
         perror("inet_pton");
         exit(-1);
     }
-    remoteaddr.sin6_port = htons(6999);
+    remoteaddr.sin6_port = htons(1221);
 
     rc = connect(link_fd, (struct sockaddr *)&remoteaddr, sizeof(remoteaddr));
     if (rc < 0) {
