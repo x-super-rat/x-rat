@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 project(x-rat_server)
 
 include_directories("include")
+include_directories("${CMAKE_SOURCE_DIR}/common/include")
 
 set(XRAT_SERVER_VERSION_MAJOR ${XRAT_BASE_VERSION_MAJOR})
 set(XRAT_SERVER_VERSION_MINOR ${XRAT_BASE_VERSION_MINOR})
@@ -22,6 +23,7 @@ set(XRAT_SERVER_EXEC_HDR
     x-rat-server-main.cpp
     )
 set(DEPENDS
+    x-rat_common
     )
 
 add_library(${PROJECT_NAME}-obj OBJECT ${XRAT_SERVER_HDR} ${XRAT_SERVER_SRC})

@@ -1,35 +1,147 @@
+#include <cerrno>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
-#include <net/if.h>
 
-#include "x-rat-client-main.h"
+#include <unistd.h>
 
-int main()
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <sys/ioctl.h>
+#include <sys/poll.h>
+#include <sys/select.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+
+#include "x_rat_common.h"
+
+int process_incoming_tun_packet(int tun_fd, int link_fd)
 {
-    char tun_name[IFNAMSIZ];
+    char buffer[2048];
+    int nread = read(tun_fd, buffer, sizeof(buffer));
 
-    /* Connect to the device */
-    strcpy(tun_name, "tun77");
-    int tun_fd = tun_alloc(tun_name, IFF_TUN | IFF_NO_PI); /* tun interface */
+    if (nread < 0) {
+        perror("Reading from interface");
+        return 1;
+    }
+
+    write(link_fd, buffer, nread);
+
+    printf("TUN: read %d bytes\n", nread);
+    return 0;
+}
+
+int process_incoming_link_packet(int link_fd, int tun_fd)
+{
+    char buffer[2048];
+    int nread = read(link_fd, buffer, sizeof(buffer));
+
+    if (nread < 0) {
+        perror("Reading from interface");
+        return 1;
+    }
+
+    write(tun_fd, buffer, nread);
+
+    printf("Link: read %d bytes\n", nread);
+    return 0;
+}
+
+int main(int argc, char *argv[])
+{
+    const char *tun_name = "tun0";
+    int tun_fd = open_tun(tun_name); /* tun interface */
 
     if (tun_fd < 0) {
-        perror("Allocating interface");
         exit(1);
     }
 
-    /* Now read data coming from the kernel */
-    while (1) {
-        /* Note that "buffer" should be at least the MTU size of the interface, eg 1500 bytes */
-        nread = read(tun_fd, buffer, sizeof(buffer));
-        if (nread < 0) {
-            perror("Reading from interface");
-            close(tun_fd);
-            exit(1);
-        }
-
-        /* Do whatever with the data */
-        printf("Read %d bytes from device %s\n", nread, tun_name);
+    int link_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (link_fd < 0) {
+        perror("socket");
+        exit(1);
     }
 
-    cout << "Hello World!" << endl;
+    int on = 1;
+    int rc = ioctl(link_fd, FIONBIO, reinterpret_cast<char *>(&on));
+    if (rc < 0) {
+        perror("ioctl() sock failed");
+        close(link_fd);
+        exit(-1);
+    }
+
+    rc = ioctl(tun_fd, FIONBIO, reinterpret_cast<char *>(&on));
+    if (rc < 0) {
+        perror("ioctl() tun failed");
+        close(tun_fd);
+        exit(-1);
+    }
+
+    struct sockaddr_in remoteaddr = {};
+
+    remoteaddr.sin_family = AF_INET;
+    remoteaddr.sin_addr.s_addr = inet_addr("8.8.8.8");
+    remoteaddr.sin_port = htons(6999);
+
+    rc = connect(link_fd, (struct sockaddr *)&remoteaddr, sizeof(remoteaddr));
+    if (rc < 0) {
+        perror("connect");
+        exit(1);
+    }
+
+    //    si_me.sin_port = 6999;
+    //    si_me.sin_family = AF_UNSPEC;
+    //    si_me.sin_addr.s_addr = htonl(INADDR_ANY);
+    //    int result = bind(sock, reinterpret_cast<sockaddr *>(&si_me), sizeof(sockaddr));
+    //    if (result < 0) {
+    //        perror("bind");
+    //        exit(1);
+    //    }
+
+    const int nfds = 2;
+    pollfd fds[nfds] = {
+        { .fd = tun_fd,
+            .events = POLLIN,
+            .revents = 0 },
+        { .fd = link_fd,
+            .events = POLLIN,
+            .revents = 0 }
+    };
+
+    bool end_server = 0;
+
+    while (true) {
+        rc = poll(fds, 2, -1);
+        if (rc < 0) {
+            perror("  poll() failed");
+            break;
+        }
+
+        int current_size = nfds;
+        for (int i = 0; i < current_size; i++) {
+            if (fds[i].revents == 0)
+                continue;
+
+            if (fds[i].revents != POLLIN) {
+                printf("  Error! revents = %d\n", fds[i].revents);
+                end_server = true;
+                break;
+            }
+
+            if (fds[i].fd == tun_fd) {
+                process_incoming_tun_packet(tun_fd, link_fd);
+                continue;
+            }
+
+            if (fds[i].fd == link_fd) {
+                process_incoming_link_packet(link_fd, tun_fd);
+                continue;
+            }
+        }
+    }
+
     return 0;
 }

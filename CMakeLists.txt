@@ -14,5 +14,7 @@ set(XRAT_BASE_VERSION_MINOR 0)
 set(XRAT_BASE_VERSION_PATCH 5)
 set(XRAT_BASE_VERSION "${XRAT_BASE_VERSION_MAJOR}.${XRAT_BASE_VERSION_MINOR}.${XRAT_BASE_VERSION_PATCH}")
 
+add_subdirectory(common)
 add_subdirectory(client)
 add_subdirectory(server)
+add_subdirectory(peer)
