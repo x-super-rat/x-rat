@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 
     struct sockaddr_in6 remoteaddr = {};
     remoteaddr.sin6_family = AF_INET6;
-    rc = inet_pton(AF_INET6, "::FFFF:169.254.0.1", &remoteaddr.sin6_addr);
+    rc = inet_pton(AF_INET6, "::FFFF:169.254.0.2", &remoteaddr.sin6_addr); // This is the peer address. Change it.
     if (rc != 1) {
         perror("inet_pton");
         exit(-1);
