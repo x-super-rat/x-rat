@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 project(x-rat)
 
+enable_testing()
+
 set(CMAKE_MODULE_PATH  ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 
 set(CMAKE_C_STANDARD 11)
@@ -14,9 +16,21 @@ set(XRAT_BASE_VERSION_MINOR 0)
 set(XRAT_BASE_VERSION_PATCH 5)
 set(XRAT_BASE_VERSION "${XRAT_BASE_VERSION_MAJOR}.${XRAT_BASE_VERSION_MINOR}.${XRAT_BASE_VERSION_PATCH}")
 
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+
+IF(CMAKE_COMPILER_IS_GNUCC)
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
+    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0")
+ENDIF(CMAKE_COMPILER_IS_GNUCC)
+
 find_package(MbedTLS REQUIRED)
+find_package(Threads REQUIRED)
 
 add_subdirectory(common)
 add_subdirectory(client)
 add_subdirectory(server)
 add_subdirectory(peer)
+add_subdirectory(test)
+
+add_test(${PROJECT_NAME} test/x-rat_test)
+set_tests_properties(${PROJECT_NAME} PROPERTIES DEPENDS x-rat_test)

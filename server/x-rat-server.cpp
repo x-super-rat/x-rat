@@ -1,6 +1,3 @@
-#include "x-rat-server.h"
+#include <boost/bimap.hpp>
 
-int main(void)
-{
-    return 0;
-}
+#include "x-rat-server.h"

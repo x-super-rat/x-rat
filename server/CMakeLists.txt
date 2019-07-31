@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.5)
 project(x-rat_server)
 
+find_package(Boost REQUIRED)
+
+include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
+
 include_directories("include")
 include_directories("${CMAKE_SOURCE_DIR}/common/include")
 
@@ -12,9 +16,18 @@ add_definitions(-DXRAT_SERVER_VERSION="${XRAT_SERVER_VERSION}")
 
 set(XRAT_SERVER_HDR
     x-rat-server.h
+    ConnectionMap.h
+    IPv4BitMap.h
+    IPv6BitMap.h
+    ConnectionInfo.h
+    XRatServer.h
     )
 set(XRAT_SERVER_SRC
     x-rat-server.cpp
+    ConnectionMap.cpp
+    IPv4BitMap.cpp
+    IPv6BitMap.cpp
+    XRatServer.cpp
     )
 set(XRAT_SERVER_EXEC_SRC
     x-rat-server-main.h
@@ -24,6 +37,8 @@ set(XRAT_SERVER_EXEC_HDR
     )
 set(DEPENDS
     x-rat_common
+    ${Boost_LIBRARIES}
+    ${CMAKE_THREAD_LIBS_INIT}
     )
 
 add_library(${PROJECT_NAME}-obj OBJECT ${XRAT_SERVER_HDR} ${XRAT_SERVER_SRC})
@@ -39,7 +54,7 @@ set_target_properties(${PROJECT_NAME}-shared PROPERTIES
         SOVERSION ${XRAT_SERVER_VERSION_MAJOR})
 
 add_executable(${PROJECT_NAME} ${XRAT_SERVER_EXEC_HDR} ${XRAT_SERVER_EXEC_SRC})
-target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}-static)
+target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}-static ${DEPENDS})
 
 install(FILES ${XRAT_SERVER_HDR}
    DESTINATION include)

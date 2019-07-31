@@ -12,9 +12,17 @@ add_definitions(-DXRAT_COMMON_VERSION="${XRAT_COMMON_VERSION}")
 
 set(XRAT_COMMON_HDR
     include/x_rat_common.h
+    include/Utilities.h
+    include/AbstractEncryptionProvider.h
+    include/AESGCMEncryptionProvider.h
+    include/AESCTREncryptionProvider.h
     )
 set(XRAT_COMMON_SRC
     src/x_rat_common.cpp
+    src/Utilities.cpp
+    src/AbstractEncryptionProvider.cpp
+    src/AESGCMEncryptionProvider.cpp
+    src/AESCTREncryptionProvider.cpp
     )
 set(DEPENDS
     ${MBEDTLS_LIBRARIES}
