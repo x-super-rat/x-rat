@@ -6,11 +6,11 @@ CHEESE protocol is the secure communication protocol used by x-rat services.
 
 ### Quick Facts Table
 
-| Item               | Value                                 |
-| ------------------ | ------------------------------------- |
-| Transport Protocol | Any datagram based protocol           |
-| Encryption         | AES-128-CCM, AES-128-GCM, AES-128-CTR |
-| Endianness         | Big Endian                            |
+| Item               | Value                                                        |
+| ------------------ | ------------------------------------------------------------ |
+| Transport Protocol | Any datagram based protocol                                  |
+| Encryption         | AES-128-CCM, AES-128-GCM, AES-128-CTR (block cipher >= 128 bits) |
+| Endianness         | Big Endian                                                   |
 
 
 
@@ -26,7 +26,9 @@ Every user has a random, service provider assigned, 4-byte user ID.
 
 User may set a password key on both end and **keep it safe**. The encryption keys are derived from the master password using [PKCS#5 PBKDF2](https://tools.ietf.org/html/rfc2898#page-9). The salt Salt is generated randomly and can be changed by the initiator at any time. The iteration is 10,000 times.
 
+### Minimum Packet Size
 
+The minimum packet size is 58 bytes. The CHEESE header has 30 bytes, however it needs next 28 bytes to provides pseudo-randomness. The sender must append the data to at least 58 bytes if it does not have enough bytes.
 
 ## Packet Header
 
@@ -96,5 +98,4 @@ First 12 bytes of IV are generated randomly. Last 4 bytes serves as counter. Xor
 
 #### Data Size
 
-Data size indicates the real size of a encapsuled packet. Packet may append to any length of data to introduce randomness.
-
+Data size indicates the real size of a encapsulated packet. Packet may append to any length of data to introduce randomness.
