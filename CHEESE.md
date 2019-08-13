@@ -41,18 +41,18 @@ The minimum packet size is 58 bytes. The CHEESE header has 30 bytes, however it 
     </th>
     <tr>
   	    <td>0</td>
-        <td colspan="4">User Id (uint32, BE, xored)</td>
+        <td colspan="4">User Id (uint32, BE)</td>
     </tr>
     <tr>
   	    <td>4</td>
-        <td colspan="4" rowspan="2">Salt (8 byte array, xored)</td>
+        <td colspan="4" rowspan="2">Salt (8 byte array)</td>
     </tr>
     <tr>
   	    <td>8</td>
     </tr>
     <tr>
   	    <td>12</td>
-        <td colspan="4" rowspan="4">IV (16 byte array, xored)</td>
+        <td colspan="4" rowspan="4">IV (16 byte arraytd>
     </tr>
     <tr>
   	    <td>16</td>
@@ -65,7 +65,7 @@ The minimum packet size is 58 bytes. The CHEESE header has 30 bytes, however it 
     </tr>
     <tr>
         <td>28</td>
-        <td colspan="2">Data Size (uint16, encrypted)</td>
+        <td colspan="2">Data Size (uint16)</td>
         <td colspan="2">Payload (encrypted)</td>
     </tr>
     <tr>
@@ -98,4 +98,15 @@ First 12 bytes of IV are generated randomly. Last 4 bytes serves as counter. Xor
 
 #### Data Size
 
-Data size indicates the real size of a encapsulated packet. Packet may append to any length of data to introduce randomness.
+Data size indicates the real size of a encapsulated packet. Packet may append to any length of data to introduce randomness. Xored with payload[28:30].
+
+
+
+
+
+
+
+
+
+
+
