@@ -52,7 +52,7 @@ The minimum packet size is 58 bytes. The CHEESE header has 30 bytes, however it 
     </tr>
     <tr>
   	    <td>12</td>
-        <td colspan="4" rowspan="4">IV (16 byte array)<td>
+        <td colspan="4" rowspan="4">IV (16 byte array)</td>
     </tr>
     <tr>
   	    <td>16</td>
