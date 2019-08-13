@@ -25,6 +25,9 @@ ENDIF(CMAKE_COMPILER_IS_GNUCC)
 
 find_package(MbedTLS REQUIRED)
 find_package(Threads REQUIRED)
+find_package(TBB REQUIRED)
+
+include_directories(SYSTEM ${TBB_INCLUDE_DIRS})
 
 add_subdirectory(common)
 add_subdirectory(client)

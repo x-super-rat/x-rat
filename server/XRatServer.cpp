@@ -3,6 +3,8 @@
 #include <cstdlib>
 #include <cstring>
 
+#include <functional>
+
 #include <unistd.h>
 
 #include <arpa/inet.h>
@@ -26,8 +28,15 @@ XRatServer::XRatServer(in_addr_t ipv4Pool, unsigned ipv4Prefix)
     : _tunFd(-1)
     , _linkFd(-1)
     , _connectionMap(ipv4Pool, ipv4Prefix, in6_addr(), 64)
-    , _processThread(0)
 {
+}
+
+static void alloc_cb(uv_handle_t *handle, size_t suggested_size, uv_buf_t *buf)
+{
+    static char slab[65536];
+
+    buf->base = slab;
+    buf->len = sizeof(slab);
 }
 
 bool XRatServer::initialize()
@@ -45,26 +54,21 @@ bool XRatServer::initialize()
         return false;
     }
 
-    int on = 1;
-    int rc = ioctl(link_fd, FIONBIO, reinterpret_cast<char *>(&on));
-    if (rc < 0) {
-        perror("ioctl() sock failed");
-        close(link_fd);
-        return false;
-    }
+    int rc;
 
-    rc = ioctl(tun_fd, FIONBIO, reinterpret_cast<char *>(&on));
-    if (rc < 0) {
-        perror("ioctl() tun failed");
-        close(tun_fd);
-        return false;
-    }
+    rc = uv_loop_init(&_uvloop);
+    rc = uv_udp_init(&_uvloop, &_linkSock);
 
     struct sockaddr_in6 localaddr = {};
 
     localaddr.sin6_family = AF_INET6;
     localaddr.sin6_addr = IN6ADDR_ANY_INIT;
     localaddr.sin6_port = htons(1221);
+
+    namespace pl = std::placeholders;
+
+    rc = uv_udp_bind(&_linkSock, reinterpret_cast<sockaddr *>(&localaddr), 0);
+    //    rc = uv_udp_recv_start(&_linkSock, alloc_cb, std::bind(&XRatServer::processIncomingClientPacket, this, pl::_1, pl::_2, pl::_3, pl::_4, pl::_5);
 
     // Bind the socket with the server address
     if (::bind(link_fd, (const struct sockaddr *)&localaddr, sizeof(localaddr)) < 0) {
@@ -81,15 +85,19 @@ bool XRatServer::initialize()
 
 bool XRatServer::start()
 {
-    // FIXME: check if already started
-    _processThread = pthread_create(&_processThread, nullptr, [](void *obj) -> void * {
-        auto srv = static_cast<XRatServer *>(obj);
-        srv->processLoop();
-        return nullptr;
-    },
-        this);
+    if (_processThread) {
+        stop();
+        _processThread->join();
+    }
 
+    // FIXME: check if already started
+
+    _processThread = std::make_unique<std::thread>(&XRatServer::processLoop, this);
     return true;
+}
+
+bool XRatServer::stop()
+{
 }
 
 int XRatServer::processIncomingInternetPacket()
@@ -137,26 +145,16 @@ int XRatServer::processIncomingInternetPacket()
 }
 
 // Packet from client
-int XRatServer::processIncomingClientPacket()
+int XRatServer::processIncomingClientPacket(uv_udp_t *handle, ssize_t nread, const uv_buf_t *rcvbuf, const struct sockaddr *addr, unsigned flags)
 {
-    char buffer[2048];
-
-    sockaddr_in6 ratclientaddr = {};
-
-    unsigned int len = sizeof(ratclientaddr);
-    int nread = recvfrom(_linkFd, (char *)buffer, sizeof(buffer), MSG_WAITALL, (struct sockaddr *)&ratclientaddr, &len);
-
-    if (static_cast<unsigned int>(nread) < sizeof(ip)) {
-        fprintf(stderr, "Invalid packet, too small: %d bytes\n", nread);
-        return 2;
-    }
+    const sockaddr_in6 *ratclientaddr = reinterpret_cast<const sockaddr_in6 *>(addr);
 
     OriginalSourceConnectionInfo original;
 
-    original.client_address = ratclientaddr.sin6_addr;
-    original.client_port = ratclientaddr.sin6_port;
+    original.client_address = ratclientaddr->sin6_addr;
+    original.client_port = ratclientaddr->sin6_port;
 
-    ip *hdrv4 = reinterpret_cast<ip *>(buffer);
+    const ip *hdrv4 = reinterpret_cast<const ip *>(rcvbuf);
     if (hdrv4->ip_v == 0x04) {
         original.proto = hdrv4->ip_p;
         original.src_address = Utilities::map4to6(hdrv4->ip_src);
@@ -164,24 +162,24 @@ int XRatServer::processIncomingClientPacket()
         TransformedSourceConnectionInfo xfrm;
         _connectionMap.getTransformed(original, xfrm);
 
-        hdrv4->ip_src = Utilities::map6to4(xfrm.xfrm_src_address);
-        hdrv4->ip_sum = 0;
-        hdrv4->ip_sum = Utilities::ipChecksum(hdrv4, sizeof(ip));
+        //        hdrv4->ip_src = Utilities::map6to4(xfrm.xfrm_src_address);
+        //        hdrv4->ip_sum = 0;
+        //        hdrv4->ip_sum = Utilities::ipChecksum(hdrv4, sizeof(ip));
 
     } else if (hdrv4->ip_v == 0x06) {
-        ip6_hdr *hdrv6 = reinterpret_cast<ip6_hdr *>(buffer);
-        original.proto = hdrv6->ip6_nxt;
-        original.src_address = hdrv6->ip6_src;
+        //        ip6_hdr *hdrv6 = reinterpret_cast<ip6_hdr *>(rcvbuf);
+        //        original.proto = hdrv6->ip6_nxt;
+        //        original.src_address = hdrv6->ip6_src;
 
-        TransformedSourceConnectionInfo xfrm;
-        _connectionMap.getTransformed(original, xfrm);
+        //        TransformedSourceConnectionInfo xfrm;
+        //        _connectionMap.getTransformed(original, xfrm);
 
-        hdrv6->ip6_src = xfrm.xfrm_src_address;
+        //        hdrv6->ip6_src = xfrm.xfrm_src_address;
     } else {
         return -1; // bad proto type
     }
 
-    write(_tunFd, buffer, nread);
+    write(_tunFd, rcvbuf, nread);
     printf("packet %d bytes\n", nread);
 
     return 0;
@@ -221,7 +219,7 @@ int XRatServer::processLoop()
             }
 
             if (fds[i].fd == _linkFd) {
-                processIncomingClientPacket();
+                //                processIncomingClientPacket();
             }
         }
     }

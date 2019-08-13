@@ -28,7 +28,7 @@ bool AESCTREncryptionProvider::setDecryptionKey(const uint8_t *key, int size)
     return checkError(mbedtls_aes_setkey_enc(_encctx, key, size * 8));
 }
 
-bool AESCTREncryptionProvider::setEncryptionIVOrNonceCounter(const uint8_t *IV, int size)
+bool AESCTREncryptionProvider::setEncryptionIV(const uint8_t *IV, int size)
 {
     if (size <= 16) {
         std::memcpy(_encNonceCtr, IV, size);
@@ -38,7 +38,7 @@ bool AESCTREncryptionProvider::setEncryptionIVOrNonceCounter(const uint8_t *IV, 
     }
 }
 
-bool AESCTREncryptionProvider::setDecryptionIVOrNonceCounter(const uint8_t *IV, int size)
+bool AESCTREncryptionProvider::setDecryptionIV(const uint8_t *IV, int size)
 {
     if (size <= 16) {
         std::memcpy(_decNonceCtr, IV, size);
@@ -48,12 +48,12 @@ bool AESCTREncryptionProvider::setDecryptionIVOrNonceCounter(const uint8_t *IV, 
     }
 }
 
-bool AESCTREncryptionProvider::getEncryptionIVOrNonceCounter(std::uint8_t *IV, int &size)
+bool AESCTREncryptionProvider::getEncryptionIV(std::uint8_t *IV, int &size)
 {
     throw; //FIXME: remove this function
 }
 
-bool AESCTREncryptionProvider::getDecryptionIVorNonceCounter(std::uint8_t *IV, int &size)
+bool AESCTREncryptionProvider::getDecryptionIV(std::uint8_t *IV, int &size)
 {
     throw; //FIXME: remove this function
 }

@@ -12,10 +12,10 @@ public:
 
     virtual bool setEncryptionKey(const uint8_t *key, int size) override;
     virtual bool setDecryptionKey(const uint8_t *key, int size) override;
-    virtual bool setEncryptionIVOrNonceCounter(const uint8_t *IV, int size) override;
-    virtual bool setDecryptionIVOrNonceCounter(const uint8_t *IV, int size) override;
-    virtual bool getEncryptionIVOrNonceCounter(uint8_t *IV, int &size) override;
-    virtual bool getDecryptionIVorNonceCounter(uint8_t *IV, int &size) override;
+    virtual bool setEncryptionIV(const uint8_t *IV, int size) override;
+    virtual bool setDecryptionIV(const uint8_t *IV, int size) override;
+    virtual bool getEncryptionIV(uint8_t *IV, int &size) override;
+    virtual bool getDecryptionIV(uint8_t *IV, int &size) override;
     virtual bool encrypt(const uint8_t *plaintext, int size, uint8_t *encrypted) override;
     virtual bool decrypt(const uint8_t *encrypted, int size, uint8_t *plaintext) override;
 
