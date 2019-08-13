@@ -20,6 +20,38 @@ bool PacketChainManager::netInput(PacketVector *packet)
     }
 }
 
+void PacketChainManager::startProcessing()
+{
+    std::lock_guard<std::mutex> lock(_threadGroupOperationLock);
+
+    if (!_threadGroup.empty()) {
+        return;
+    }
+
+    _runProcessing = true;
+    for (unsigned i = 0; i < _threadCount; ++i) {
+        _threadGroup.push_back(std::thread(std::bind(&PacketChainManager::processLoop, this)));
+    }
+}
+
+void PacketChainManager::stopProcessing()
+{
+    std::lock_guard<std::mutex> lock(_threadGroupOperationLock);
+
+    if (_threadGroup.empty()) {
+        return;
+    }
+
+    _runProcessing = false;
+    _pendingPackets.abort();
+
+    for (auto &thread : _threadGroup) {
+        thread.join();
+    }
+
+    _threadGroup.clear();
+}
+
 void PacketChainManager::processNextPacket()
 {
     std::tuple<PacketVector *, PacketState> tup;
@@ -126,6 +158,13 @@ bool PacketChainManager::packetNetEnd(PacketVector *packet)
 {
     (void)packet;
     return true;
+}
+
+void PacketChainManager::processLoop()
+{
+    while (_runProcessing) {
+        processNextPacket();
+    }
 }
 
 PacketChainManager::PacketState &operator++(PacketChainManager::PacketState &state)

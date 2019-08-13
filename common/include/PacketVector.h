@@ -2,16 +2,42 @@
 #define PACKETVECTOR_H
 
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 
 #include <vector>
 
 #include <tbb/scalable_allocator.h>
 
-class PacketVector : std::vector<std::uint8_t, tbb::scalable_allocator<std::uint8_t>> {
+class PacketVector : public std::vector<std::uint8_t, tbb::scalable_allocator<std::uint8_t>> {
 public:
     typedef std::vector<std::uint8_t, tbb::scalable_allocator<std::uint8_t>> base;
 
+    const PacketVector &operator=(const PacketVector cpy)
+    {
+        this->resize(cpy.size());
+        std::memcpy(data(), cpy.data(), cpy.size());
+        return *this;
+    }
+
+    struct PacketMetadata {
+        std::uint32_t UserId;
+
+    } PacketMetadata;
+
+    template <typename falloc>
+    static PacketVector *createPacketVector(falloc f = scalable_malloc)
+    {
+        return reinterpret_cast<PacketVector *>(f(sizeof(PacketVector)));
+    }
+
+    template <typename ffree>
+    static void deletePacketVector(PacketVector *p, ffree f = scalable_free)
+    {
+        f(p);
+    }
+
+private:
     explicit PacketVector() {}
 
     explicit PacketVector(int size)
@@ -29,13 +55,6 @@ public:
         : base(cpy.size())
     {
         std::memcpy(data(), cpy.data(), cpy.size());
-    }
-
-    const PacketVector &operator=(const PacketVector cpy)
-    {
-        this->resize(cpy.size());
-        std::memcpy(data(), cpy.data(), cpy.size());
-        return *this;
     }
 };
 

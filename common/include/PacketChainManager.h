@@ -4,9 +4,13 @@
 #include <atomic>
 #include <functional>
 #include <map>
+#include <mutex>
+#include <thread>
 
 #include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_unordered_map.h>
+#include <tbb/task_group.h>
+#include <tbb/task_scheduler_init.h>
 
 #include "CheesePacket.h"
 #include "EncryptionManager.h"
@@ -16,11 +20,24 @@
 
 class PacketChainManager {
 public:
-    explicit PacketChainManager(EncryptionManager *encryptionManager, ForwardManager *forwardManager, XfrmManager *xfrmManager)
+    explicit PacketChainManager(EncryptionManager *encryptionManager,
+        ForwardManager *forwardManager,
+        XfrmManager *xfrmManager,
+        int processThreads = 0)
         : _encryptionManager(encryptionManager)
         , _xfrmManager(xfrmManager)
         , _forwardManager(forwardManager)
+        , _runProcessing(false)
+        , _threadGroupOperationLock()
     {
+        if (processThreads == 0) {
+            _threadCount = std::thread::hardware_concurrency();
+        } else if (processThreads < 0) {
+            int count = std::thread::hardware_concurrency() + processThreads;
+            _threadCount = count <= 0 ? 1 : count;
+        } else if (processThreads > 0) {
+            _threadCount = processThreads;
+        }
     }
 
     enum PacketState : std::uint32_t {
@@ -42,6 +59,9 @@ public:
     bool linkInput(PacketVector *packet);
     bool netInput(PacketVector *packet);
 
+    void startProcessing();
+    void stopProcessing();
+
 private:
     void processNextPacket();
     bool moveNext(PacketVector *packet, PacketState packetState);
@@ -58,12 +78,18 @@ private:
     bool packetNetForward(PacketVector *packet);
     bool packetNetEnd(PacketVector *packet);
 
+    void processLoop();
+
     EncryptionManager *_encryptionManager;
     XfrmManager *_xfrmManager;
     ForwardManager *_forwardManager;
 
     tbb::concurrent_bounded_queue<std::tuple<PacketVector *, PacketState>> _pendingPackets;
     std::vector<std::function<bool(PacketVector *)>> _chainHooks[CHAIN_STATES_COUNT];
+    volatile bool _runProcessing;
+    std::mutex _threadGroupOperationLock;
+    std::vector<std::thread> _threadGroup;
+    unsigned int _threadCount;
 };
 
 PacketChainManager::PacketState &operator++(PacketChainManager::PacketState &state);
