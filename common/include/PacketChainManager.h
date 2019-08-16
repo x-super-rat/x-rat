@@ -13,6 +13,7 @@
 #include <tbb/task_scheduler_init.h>
 
 #include "CheesePacket.h"
+#include "EncodeManager.h"
 #include "EncryptionManager.h"
 #include "ForwardManager.h"
 #include "PacketVector.h"
@@ -42,6 +43,7 @@ public:
 
     enum PacketState : std::uint32_t {
         CHAIN_LINK_INPUT = 0,
+        CHAIN_LINK_DECODE,
         CHAIN_LINK_DECRYPT,
         CHAIN_LINK_XFRM,
         CHAIN_LINK_FORWARD,
@@ -50,6 +52,7 @@ public:
         CHAIN_NET_INPUT,
         CHAIN_NET_XFRM,
         CHAIN_NET_ENCRYPT,
+        CHAIN_NET_ENCODE,
         CHAIN_NET_FORWARD,
         CHAIN_NET_END,
 
@@ -68,6 +71,7 @@ private:
     bool executeHooks(PacketVector *packet, PacketState state);
     void endPacket(PacketVector *packet);
 
+    bool packetLinkDecode(PacketVector *packet);
     bool packetLinkDecrpt(PacketVector *packet);
     bool packetLinkXfrm(PacketVector *packet);
     bool packetLinkForward(PacketVector *packet);
@@ -75,6 +79,7 @@ private:
 
     bool packetNetXfrm(PacketVector *packet);
     bool packetNetEncrypt(PacketVector *packet);
+    bool packetNetEncode(PacketVector *packet);
     bool packetNetForward(PacketVector *packet);
     bool packetNetEnd(PacketVector *packet);
 
@@ -83,6 +88,7 @@ private:
     EncryptionManager *_encryptionManager;
     XfrmManager *_xfrmManager;
     ForwardManager *_forwardManager;
+    EncodeManager _encodeManager;
 
     tbb::concurrent_bounded_queue<std::tuple<PacketVector *, PacketState>> _pendingPackets;
     std::vector<std::function<bool(PacketVector *)>> _chainHooks[CHAIN_STATES_COUNT];

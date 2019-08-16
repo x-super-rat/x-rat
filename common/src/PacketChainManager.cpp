@@ -85,6 +85,8 @@ bool PacketChainManager::moveNext(PacketVector *packet, PacketState packetState)
     case CHAIN_NET_INPUT:
         throw; // This is not happening
 
+    case CHAIN_LINK_DECODE:
+        return packetLinkDecode(packet) && executeHooks(packet, packetState);
     case CHAIN_LINK_DECRYPT:
         return packetLinkDecrpt(packet) && executeHooks(packet, packetState);
     case CHAIN_LINK_XFRM:
@@ -95,6 +97,8 @@ bool PacketChainManager::moveNext(PacketVector *packet, PacketState packetState)
         return packetNetXfrm(packet) && executeHooks(packet, packetState);
     case CHAIN_NET_ENCRYPT:
         return packetNetEncrypt(packet) && executeHooks(packet, packetState);
+    case CHAIN_NET_ENCODE:
+        return packetNetEncode(packet) && executeHooks(packet, packetState);
     case CHAIN_NET_FORWARD:
         return packetNetForward(packet) && executeHooks(packet, packetState);
     default:
@@ -116,6 +120,11 @@ bool PacketChainManager::executeHooks(PacketVector *packet, PacketChainManager::
 void PacketChainManager::endPacket(PacketVector *packet)
 {
     delete packet;
+}
+
+bool PacketChainManager::packetLinkDecode(PacketVector *packet)
+{
+    return _encodeManager.decode(packet);
 }
 
 bool PacketChainManager::packetLinkDecrpt(PacketVector *packet)
@@ -147,6 +156,11 @@ bool PacketChainManager::packetNetXfrm(PacketVector *packet)
 bool PacketChainManager::packetNetEncrypt(PacketVector *packet)
 {
     return _encryptionManager->encryptPacket(packet);
+}
+
+bool PacketChainManager::packetNetEncode(PacketVector *packet)
+{
+    return _encodeManager.encode(packet);
 }
 
 bool PacketChainManager::packetNetForward(PacketVector *packet)

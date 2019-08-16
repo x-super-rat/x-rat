@@ -37,6 +37,7 @@ set(XRAT_SERVER_EXEC_HDR
     )
 set(DEPENDS
     x-rat_common
+    ${MALLOC_LIB}
     ${Boost_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
     )

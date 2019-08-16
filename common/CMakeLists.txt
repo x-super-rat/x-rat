@@ -18,7 +18,6 @@ set(XRAT_COMMON_HDR
     include/CheesePacket.h
     include/PacketDecoder.h
     include/PacketEncoder.h
-    include/PacketManipulator.h
     include/AbstractEncryptionProvider.h
     include/AESGCMEncryptionProvider.h
     include/AESCTREncryptionProvider.h
@@ -29,12 +28,13 @@ set(XRAT_COMMON_HDR
     include/XfrmManager.h
     include/ForwardManager.h
     include/PacketVector.h
+    include/EncodeManager.h
+    include/RandomPool.h
     )
 set(XRAT_COMMON_SRC
     src/x_rat_common.cpp
     src/PacketDecoder.cpp
     src/PacketEncoder.cpp
-    src/PacketManipulator.cpp
     src/Utilities.cpp
     src/AbstractEncryptionProvider.cpp
     src/AESGCMEncryptionProvider.cpp
@@ -46,6 +46,8 @@ set(XRAT_COMMON_SRC
     src/XfrmManager.cpp
     src/ForwardManager.cpp
     src/PacketVector.cpp
+    src/EncodeManager.cpp
+    src/RandomPool.cpp
     )
 set(DEPENDS
     ${MBEDTLS_LIBRARIES}

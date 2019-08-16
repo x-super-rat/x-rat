@@ -24,6 +24,7 @@ set(XRAT_CLIENT_EXEC_SRC
     )
 set(DEPENDS
     x-rat_common
+    ${MALLOC_LIB}
     )
 
 add_library(${PROJECT_NAME}-obj OBJECT ${XRAT_CLIENT_HDR} ${XRAT_CLIENT_SRC})

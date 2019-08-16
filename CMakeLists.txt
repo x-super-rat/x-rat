@@ -27,6 +27,8 @@ find_package(MbedTLS REQUIRED)
 find_package(Threads REQUIRED)
 find_package(TBB REQUIRED)
 
+set(MALLOC_LIB ${TBB_MALLOC_PROXY_LIBRARY})
+
 include_directories(SYSTEM ${TBB_INCLUDE_DIRS})
 
 add_subdirectory(common)

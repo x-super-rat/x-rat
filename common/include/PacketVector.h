@@ -7,34 +7,118 @@
 
 #include <vector>
 
-#include <tbb/scalable_allocator.h>
-
-class PacketVector : public std::vector<std::uint8_t, tbb::scalable_allocator<std::uint8_t>> {
+/**
+ * @brief The PacketVector class
+ */
+class PacketVector : private std::vector<std::uint8_t /*, tbb::scalable_allocator<std::uint8_t>*/> {
 public:
-    typedef std::vector<std::uint8_t, tbb::scalable_allocator<std::uint8_t>> base;
-
-    const PacketVector &operator=(const PacketVector cpy)
-    {
-        this->resize(cpy.size());
-        std::memcpy(data(), cpy.data(), cpy.size());
-        return *this;
-    }
+    typedef std::vector<std::uint8_t /*, tbb::scalable_allocator<std::uint8_t>*/> base;
 
     struct PacketMetadata {
         std::uint32_t UserId;
+        std::uint16_t DataSize;
+        std::uint64_t Random;
+        std::uint16_t Reserved;
 
+        bool HasIVCounter = false;
+        std::uint64_t IVCounter;
     } PacketMetadata;
 
-    template <typename falloc>
-    static PacketVector *createPacketVector(falloc f = scalable_malloc)
+    static PacketVector *createPacketVector()
     {
-        return reinterpret_cast<PacketVector *>(f(sizeof(PacketVector)));
+        return new PacketVector();
     }
 
-    template <typename ffree>
-    static void deletePacketVector(PacketVector *p, ffree f = scalable_free)
+    static void deletePacketVector(PacketVector *p)
     {
-        f(p);
+        delete p;
+    }
+
+    std::uint8_t *packet()
+    {
+        return data() + _beginIdx;
+    }
+
+    const std::uint8_t *packet() const
+    {
+        return data() + _beginIdx;
+    }
+
+    std::size_t packetSize() const
+    {
+        return _endIdx - _beginIdx;
+    }
+
+    std::size_t underlyingDataSize() const
+    {
+        return size();
+    }
+
+    std::size_t beginIdx() const
+    {
+        return _beginIdx;
+    }
+
+    bool setBeginIdx(std::size_t beginIdx)
+    {
+        if (beginIdx < _endIdx) {
+            _beginIdx = beginIdx;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    std::size_t endIdx() const
+    {
+        return _endIdx;
+    }
+
+    bool setEndIdx(std::size_t endIdx)
+    {
+        if (endIdx > _beginIdx && endIdx <= size()) {
+            _endIdx = endIdx;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    void resetBeginEndIdx()
+    {
+        _beginIdx = 0;
+        _endIdx = size();
+    }
+
+    bool setBeginEndIdx(std::size_t beginIdx, std::size_t endIdx)
+    {
+        if (endIdx > beginIdx && endIdx <= size()) {
+            _beginIdx = beginIdx;
+            _endIdx = endIdx;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool grow(std::size_t size)
+    {
+        if (size > this->size()) {
+            resize(size);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    bool shiftData(std::size_t index, std::size_t size, int offset)
+    {
+        if (index + size + offset <= this->size() && index + offset >= 0) {
+            std::memmove(data() + index + offset, data() + index, size);
+            return true;
+        } else {
+            return false;
+        }
     }
 
 private:
@@ -42,20 +126,38 @@ private:
 
     explicit PacketVector(int size)
         : base(size)
+        , _beginIdx(0)
+        , _endIdx(size)
     {
     }
 
     explicit PacketVector(int size, std::uint8_t *data)
         : base(size)
+        , _beginIdx(0)
+        , _endIdx(size)
     {
         std::memcpy(this->data(), data, size);
     }
 
     PacketVector(const PacketVector &cpy)
         : base(cpy.size())
+        , _beginIdx(0)
+        , _endIdx(cpy.size())
     {
         std::memcpy(data(), cpy.data(), cpy.size());
     }
+
+    //    const PacketVector &operator=(const PacketVector cpy)
+    //    {
+    //        this->resize(cpy.size());
+    //        std::memcpy(data(), cpy.data(), cpy.size());
+    //        return *this;
+    //    }
+
+    const PacketVector &operator=(const PacketVector cpy) = delete;
+
+    std::size_t _beginIdx;
+    std::size_t _endIdx;
 };
 
 #endif // PACKETVECTOR_H

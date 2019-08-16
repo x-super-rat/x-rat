@@ -18,6 +18,7 @@ set(XRAT_PEER_SRC
     )
 set(DEPENDS
     x-rat_common
+    ${MALLOC_LIB}
     )
 
 add_executable(${PROJECT_NAME} ${XRAT_PEER_HDR} ${XRAT_PEER_SRC})
